@@ -1,0 +1,6 @@
+# Default medallion architecture pattern
+architecture:
+  medallion:
+    bronze_layer: true
+    silver_layer: true
+    gold_layer: true

@@ -1,0 +1,18 @@
+# Sample customer configuration
+customer:
+  name: "Contoso Corp"
+  prefix: "ctso"
+
+architecture:
+  medallion:
+    bronze_layer: true
+    silver_layer: true
+    gold_layer: true
+
+capacity:
+  fabric_capacity_id: "F64-contoso-001"
+
+advanced:
+  custom_tags:
+    customer: "contoso"
+    project: "data-platform"

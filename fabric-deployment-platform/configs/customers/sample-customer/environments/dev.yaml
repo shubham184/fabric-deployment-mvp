@@ -1,0 +1,9 @@
+# Contoso development environment
+workspace_id: "acaf15c9-b415-4f0c-87b0-87e6a52ea13a"
+capacity_settings:
+  compute_scale: "small"
+  auto_scale: false
+environment_tags:
+  environment: "development"
+  team: "analytics"
+debug_mode: true

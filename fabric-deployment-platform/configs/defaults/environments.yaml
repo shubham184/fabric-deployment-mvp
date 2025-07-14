@@ -1,0 +1,18 @@
+# Default environment settings
+dev:
+  capacity_settings:
+    compute_scale: "small"
+    auto_scale: false
+  debug_mode: true
+
+test:
+  capacity_settings:
+    compute_scale: "medium"
+    auto_scale: true
+  debug_mode: false
+
+prod:
+  capacity_settings:
+    compute_scale: "large"
+    auto_scale: true
+  debug_mode: false

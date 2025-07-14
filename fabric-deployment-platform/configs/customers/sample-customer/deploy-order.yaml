@@ -1,0 +1,19 @@
+# Standard deployment order for Contoso
+deployment_order:
+  - lakehouses
+  - pipelines
+  - notebooks
+
+templates:
+  lakehouses:
+    bronze: "bronze-lakehouse.json.tpl"
+    silver: "silver-lakehouse.json.tpl"
+    gold: "gold-lakehouse.json.tpl"
+  pipelines:
+    data_ingestion: "bronze-ingestion-pipeline.json.tpl"
+    data_transformation: "silver-transform-pipeline.json.tpl"
+    data_aggregation: "gold-aggregation-pipeline.json.tpl"
+  notebooks:
+    bronze_processing: "bronze-ingestion.ipynb.tpl"
+    silver_processing: "silver-transform.ipynb.tpl"
+    gold_processing: "gold-aggregation.ipynb.tpl"
