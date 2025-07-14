@@ -1,0 +1,37 @@
+trigger: none # Manual trigger only
+
+variables:
+  - group: fabric-deployment-secrets
+  - name: TARGET_ENVIRONMENT
+    value: dev
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+strategy:
+  matrix:
+    Customer1:
+      CUSTOMER_NAME: 'contoso'
+    Customer2:
+      CUSTOMER_NAME: 'fabrikam'
+    Customer3:
+      CUSTOMER_NAME: 'northwind'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.9'
+
+- script: |
+    pip install -r requirements.txt
+  displayName: 'Install Dependencies'
+
+- script: |
+    python scripts/deploy.py deploy --customer $(CUSTOMER_NAME) --environment $(TARGET_ENVIRONMENT)
+  displayName: 'Deploy $(CUSTOMER_NAME)'
+
+- task: PublishBuildArtifacts@1
+  condition: always()
+  inputs:
+    pathToPublish: 'deployment-outputs/reports'
+    artifactName: 'deployment-reports-$(CUSTOMER_NAME)'

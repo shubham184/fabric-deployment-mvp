@@ -1,0 +1,85 @@
+trigger:
+  branches:
+    include:
+    - main
+    - develop
+  paths:
+    include:
+    - configs/*
+    - generated-notebooks/*
+    - infrastructure/*
+
+variables:
+  - group: fabric-deployment-secrets
+  - name: CUSTOMER_NAME
+    value: $(Build.DefinitionName)
+  - name: TARGET_ENVIRONMENT
+    value: dev
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+- stage: Validate
+  displayName: 'Validate Configuration'
+  jobs:
+  - job: ValidateConfig
+    displayName: 'Validate Customer Configuration'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.9'
+        displayName: 'Use Python 3.9'
+    
+    - script: |
+        pip install -r requirements.txt
+      displayName: 'Install Dependencies'
+    
+    - script: |
+        python scripts/validate.py all --customer $(CUSTOMER_NAME) --environment $(TARGET_ENVIRONMENT)
+      displayName: 'Run Validation Suite'
+    
+    - task: PublishTestResults@2
+      condition: always()
+      inputs:
+        testResultsFiles: 'validation-outputs/**/*.xml'
+        testRunTitle: 'Configuration Validation'
+
+- stage: Plan
+  displayName: 'Plan Deployment'
+  dependsOn: Validate
+  condition: succeeded()
+  jobs:
+  - job: PlanDeployment
+    displayName: 'Create Deployment Plan'
+    steps:
+    - script: |
+        python scripts/deploy.py plan --customer $(CUSTOMER_NAME) --environment $(TARGET_ENVIRONMENT)
+      displayName: 'Create Terraform Plan'
+    
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'deployment-outputs/terraform-plans'
+        artifactName: 'terraform-plans'
+
+- stage: Deploy
+  displayName: 'Deploy to Environment'
+  dependsOn: Plan
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: DeployCustomer
+    displayName: 'Deploy Customer Solution'
+    environment: $(TARGET_ENVIRONMENT)
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: |
+              python scripts/deploy.py deploy --customer $(CUSTOMER_NAME) --environment $(TARGET_ENVIRONMENT)
+            displayName: 'Deploy Customer Solution'
+          
+          - task: PublishBuildArtifacts@1
+            condition: always()
+            inputs:
+              pathToPublish: 'deployment-outputs/reports'
+              artifactName: 'deployment-reports'
