@@ -1,5 +1,5 @@
 # Test environment overrides
-workspace_id: "DEV_WORKSPACE_GUID_HERE"
+workspace_id: "TEST_WORKSPACE_GUID_HERE"
 capacity_settings:
   compute_scale: "small"
   auto_scale: false
