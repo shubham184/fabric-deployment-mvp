@@ -10,7 +10,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from .artifact_manager import ArtifactManager
 from .models import (

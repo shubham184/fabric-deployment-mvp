@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-import jsonschema
+# import jsonschema
 
 from .validator import ConfigValidator
 from ..utils.helpers import deep_merge, safe_load_yaml, validate_file_exists, merge_tags

@@ -11,7 +11,7 @@ import os
 import subprocess
 import time
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from python_terraform import IsFlagged, IsNotFlagged, Terraform
 
