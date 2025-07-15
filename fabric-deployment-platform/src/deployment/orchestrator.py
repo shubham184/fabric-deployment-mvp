@@ -49,7 +49,7 @@ class DeploymentOrchestrator:
             >>> config_loader = ConfigLoader(Path("configs"), Path("schemas"))
             >>> tf_wrapper = TerraformWrapper(Path("infrastructure"))
             >>> orchestrator = DeploymentOrchestrator(
-            ...     config_loader, tf_wrapper, Path("generated-notebooks")
+            ...     config_loader, tf_wrapper, Path("predefined-artifacts")
             ... )
         """
         self.config_loader = config_loader

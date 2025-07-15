@@ -13,8 +13,8 @@ from typing import List, Optional
 
 import click
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+# Add the parent directory to path so we can import from src package
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.config.loader import ConfigLoader
 from src.deployment.models import ExitCode, PipelineConfig
@@ -72,7 +72,7 @@ def setup_batch_orchestrator(config_dir: str, terraform_dir: str, notebooks_dir:
 @click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging')
 @click.option('--config-dir', default='configs', help='Configuration directory')
 @click.option('--terraform-dir', default='infrastructure', help='Terraform directory')
-@click.option('--notebooks-dir', default='generated-notebooks', help='Generated notebooks directory')
+@click.option('--notebooks-dir', default='predefined-artifacts', help='Generated notebooks directory')
 @click.pass_context
 def cli(ctx, verbose, config_dir, terraform_dir, notebooks_dir):
     """Microsoft Fabric Batch Deployment CLI."""

@@ -66,7 +66,7 @@ class ArtifactManager:
             ArtifactException: If artifact discovery fails
             
         Example:
-            >>> manager = ArtifactManager(Path("generated-notebooks"), config_loader)
+            >>> manager = ArtifactManager(Path("predefined-artifacts"), config_loader)
             >>> artifacts = manager.discover_customer_artifacts("contoso", "dev")
             >>> print(f"Found {artifacts.total_count} artifacts")
         """
@@ -74,35 +74,33 @@ class ArtifactManager:
             customer_dir = self.notebooks_dir / customer_name / environment
             
             if not customer_dir.exists():
-                raise ArtifactException(
-                    f"Customer artifacts directory not found: {customer_dir}"
-                )
+                raise ArtifactException(f"Customer artifacts directory not found: {customer_dir}")
             
-            # Discover notebooks by pattern matching
-            lakehouses = self._discover_artifacts_by_pattern(customer_dir, "*lakehouse*.ipynb")
-            pipelines = self._discover_artifacts_by_pattern(customer_dir, "*pipeline*.ipynb")
-            notebooks = self._discover_artifacts_by_pattern(customer_dir, "*processing*.ipynb")
+            # Look in notebooks subdirectory if it exists
+            notebooks_dir = customer_dir / "notebooks"
+            search_dir = notebooks_dir if notebooks_dir.exists() else customer_dir
             
-            # Also look for bronze/silver/gold patterns
-            bronze_artifacts = self._discover_artifacts_by_pattern(customer_dir, "bronze-*.ipynb")
-            silver_artifacts = self._discover_artifacts_by_pattern(customer_dir, "silver-*.ipynb")
-            gold_artifacts = self._discover_artifacts_by_pattern(customer_dir, "gold-*.ipynb")
+            # Discover ONLY notebooks (.ipynb files)
+            all_notebooks = []
+            for pattern in ["*.ipynb", "bronze-*.ipynb", "silver-*.ipynb", "gold-*.ipynb"]:
+                notebooks = self._discover_artifacts_by_pattern(search_dir, pattern)
+                all_notebooks.extend(notebooks)
             
-            # Combine all discovered artifacts
-            all_notebooks = list(set(notebooks + bronze_artifacts + silver_artifacts + gold_artifacts))
+            # Remove duplicates
+            all_notebooks = list(set(all_notebooks))
+            
+            # Pipelines are .json files (optional discovery)
+            pipelines_dir = customer_dir / "pipelines" 
+            pipelines = []
+            if pipelines_dir.exists():
+                pipelines = self._discover_artifacts_by_pattern(pipelines_dir, "*.json")
             
             artifacts = ArtifactCollection(
                 customer_name=customer_name,
                 environment=environment,
-                lakehouses=lakehouses,
-                pipelines=pipelines,
-                notebooks=all_notebooks
-            )
-            
-            log_config_operation(
-                self.logger, "DISCOVER_ARTIFACTS",
-                f"customer={customer_name}, environment={environment}, "
-                f"found={artifacts.total_count} artifacts"
+                lakehouses=[],        # Lakehouses created by Terraform, not files
+                pipelines=pipelines,  # .json files
+                notebooks=all_notebooks  # .ipynb files
             )
             
             return artifacts
@@ -126,7 +124,7 @@ class ArtifactManager:
             ArtifactValidation with validation results
             
         Example:
-            >>> manager = ArtifactManager(Path("generated-notebooks"), config_loader)
+            >>> manager = ArtifactManager(Path("predefined-artifacts"), config_loader)
             >>> validation = manager.validate_artifacts_exist("contoso", "dev")
             >>> if not validation.all_present:
             ...     print(f"Missing: {validation.missing_artifacts}")
