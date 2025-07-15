@@ -1,4 +1,4 @@
-# Development Environment - Main Configuration
+# Development Environment - Main Configuration (SYNTAX FIXED)
 # Integrates with existing TerraformWrapper and ConfigLoader
 
 terraform {
@@ -9,58 +9,65 @@ terraform {
       source  = "microsoft/fabric"
       version = "1.3.0"
     }
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
+    }
   }
   
   # Backend configuration for state management
-  # Configure this based on your existing state management strategy
   backend "azurerm" {
+    # Configure these via backend config file or environment variables
+    # Example backend.hcl file:
     # resource_group_name  = "terraform-state-rg"
-    # storage_account_name = "terraformstate"
+    # storage_account_name = "terraformstate12345"
     # container_name       = "tfstate"
     # key                 = "fabric-dev.tfstate"
-    
-    # Alternatively, configure these via backend config file or environment variables
-    # See: https://developer.hashicorp.com/terraform/language/settings/backends/azurerm
   }
 }
 
-# Provider configuration for Microsoft Fabric
-# Authentication should be configured via environment variables or Azure CLI
+# Enhanced Provider configuration for Microsoft Fabric
 provider "fabric" {
-  # Authentication will be handled by the environment or service principal
-  # No explicit configuration needed if using Azure CLI or environment variables
+  # For development: Azure CLI authentication is acceptable
+  # For production: Always use Service Principal
   
-  # For service principal authentication, use environment variables:
-  # FABRIC_CLIENT_ID
-  # FABRIC_CLIENT_SECRET  
-  # FABRIC_TENANT_ID
+  # Enable preview features for development environment
+  preview = var.enable_preview_features
   
-  # For user authentication (development), ensure Azure CLI is logged in
-  # az login --scope https://analysis.windows.net/powerbi/api/.default
+  # Optional: Explicitly configure authentication method for development
+  use_cli = true
+  use_msi = false
+  use_oidc = false
 }
 
 # Local values for environment-specific configuration
 locals {
   environment = "dev"
   
-  # Default notebook files mapping - can be overridden by variables
-  default_notebook_files = {
+  # Improved notebook file discovery with validation
+  discovered_notebook_files = var.validate_notebook_files ? {
     for file_path in fileset("${path.root}/generated-notebooks/${var.customer_prefix}/${local.environment}", "*.ipynb") :
     trimsuffix(basename(file_path), ".ipynb") => "${path.root}/generated-notebooks/${var.customer_prefix}/${local.environment}/${file_path}"
-  }
+    if fileexists("${path.root}/generated-notebooks/${var.customer_prefix}/${local.environment}/${file_path}")
+  } : {}
   
   # Merge provided notebook files with discovered files
-  notebook_files = merge(local.default_notebook_files, var.notebook_files_override)
+  notebook_files = merge(local.discovered_notebook_files, var.notebook_files_override)
   
-  # Environment-specific tags
+  # Environment-specific tags with additional development metadata
   environment_tags = merge(var.tags, {
     environment = local.environment
     deployed_by = "terraform"
     module_version = "1.0.0"
+    deployment_time = timestamp()
+    debug_mode = var.debug_mode
   })
+  
+  # Validate required capacity for development
+  capacity_required = var.fabric_capacity_id != null && var.fabric_capacity_id != ""
 }
 
-# Customer Solution Module instantiation
+# Customer Solution Module instantiation with enhanced configuration
 module "customer_solution" {
   source = "../../modules/customer-solution"
   
@@ -78,7 +85,7 @@ module "customer_solution" {
   silver_layer = var.silver_layer
   gold_layer   = var.gold_layer
   
-  # Notebook Files
+  # Notebook Files (validated)
   notebook_files = local.notebook_files
   
   # Resource Configuration
@@ -94,7 +101,7 @@ module "customer_solution" {
   resource_name_overrides = var.resource_name_overrides
 }
 
-# Output workspace information for platform integration
+# Enhanced outputs for development environment
 output "workspace_info" {
   description = "Workspace information for platform integration"
   value = {
@@ -102,11 +109,45 @@ output "workspace_info" {
     workspace_name = module.customer_solution.workspace_name
     workspace_url  = module.customer_solution.workspace_url
     environment    = local.environment
+    capacity_assigned = var.fabric_capacity_id != null
+    debug_mode = var.debug_mode
   }
 }
 
-# Output deployment summary for debugging
 output "deployment_summary" {
-  description = "Summary of deployed resources"
-  value       = module.customer_solution.deployment_summary
+  description = "Enhanced deployment summary for development"
+  value = merge(module.customer_solution.deployment_summary, {
+    validation_status = {
+      notebook_files_found = length(local.notebook_files)
+      capacity_configured = local.capacity_required
+    }
+    development_info = {
+      preview_features_enabled = var.enable_preview_features
+      auto_cleanup_enabled = var.auto_cleanup_after_tests
+      integration_tests = var.run_integration_tests
+    }
+  })
+}
+
+# Development-specific outputs
+output "development_endpoints" {
+  description = "Development-specific endpoints and information"
+  value = {
+    workspace_portal_url = "https://app.fabric.microsoft.com/groups/${module.customer_solution.workspace_id}"
+    lakehouse_urls = module.customer_solution.resource_urls.lakehouses
+    notebook_urls = module.customer_solution.resource_urls.notebooks
+    pipeline_url = module.customer_solution.resource_urls.pipeline
+  }
+}
+
+output "quick_access_commands" {
+  description = "Quick access commands for development"
+  value = {
+    terraform_destroy = "terraform destroy -var-file=\"terraform.tfvars\""
+    workspace_access = "az login --scope https://analysis.windows.net/powerbi/api/.default"
+    debug_info = var.debug_mode ? {
+      workspace_id = module.customer_solution.workspace_id
+      resource_count = module.customer_solution.deployment_summary.resource_counts
+    } : "Enable debug_mode for detailed information"
+  }
 }

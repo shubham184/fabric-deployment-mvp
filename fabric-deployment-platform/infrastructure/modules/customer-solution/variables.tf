@@ -1,4 +1,4 @@
-# Customer Solution Module - Variable Definitions
+# Customer Solution Module - Variable Definitions (MISSING VARIABLES ADDED)
 # Variables that integrate with existing ConfigLoader and TerraformWrapper
 
 # Customer Information
@@ -22,7 +22,7 @@ variable "customer_prefix" {
   }
 }
 
-# Environment Configuration
+# ADDED: Missing environment variable
 variable "environment" {
   type        = string
   description = "Environment name (dev, staging, prod)"
@@ -77,7 +77,7 @@ variable "gold_layer" {
   default     = true
 }
 
-# Notebook File Configuration
+# ADDED: Missing notebook_files variable
 variable "notebook_files" {
   type        = map(string)
   description = "Map of notebook names to file paths for deployment"

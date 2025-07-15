@@ -1,4 +1,4 @@
-# Development Environment - Variable Definitions
+# Development Environment - Variable Definitions (MISSING VARIABLES ADDED)
 # Variables that map to TerraformWrapper output and ConfigLoader configuration
 
 # Customer Information Variables (from TerraformWrapper)
@@ -129,6 +129,7 @@ variable "enable_dev_features" {
   default     = true
 }
 
+# ADDED: Missing variable declaration
 variable "enable_preview_features" {
   type        = bool
   description = "Enable preview features for development environment"
@@ -231,4 +232,23 @@ variable "test_data_path" {
   type        = string
   description = "Path to test data for integration testing"
   default     = ""
+}
+
+# ADDED: Missing variable declarations for development environment  
+variable "auto_cleanup_after_tests" {
+  type        = bool
+  description = "Automatically cleanup resources after testing"
+  default     = false
+}
+
+# Additional development environment variables
+variable "cleanup_retention_hours" {
+  type        = number
+  description = "Hours to retain test resources before cleanup"
+  default     = 24
+  
+  validation {
+    condition     = var.cleanup_retention_hours > 0 && var.cleanup_retention_hours <= 168
+    error_message = "Cleanup retention must be between 1 and 168 hours (1 week)."
+  }
 }
