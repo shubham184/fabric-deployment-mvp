@@ -1,5 +1,5 @@
-# Customer Solution Module - Variable Definitions (MISSING VARIABLES ADDED)
-# Variables that integrate with existing ConfigLoader and TerraformWrapper
+# Customer Solution Module - Variable Definitions (SIMPLIFIED APPROACH)
+# Variables for deploying PREDEFINED artifacts to Microsoft Fabric
 
 # Customer Information
 variable "customer_name" {
@@ -22,7 +22,7 @@ variable "customer_prefix" {
   }
 }
 
-# ADDED: Missing environment variable
+# Environment Configuration
 variable "environment" {
   type        = string
   description = "Environment name (dev, staging, prod)"
@@ -77,18 +77,61 @@ variable "gold_layer" {
   default     = true
 }
 
-# ADDED: Missing notebook_files variable
-variable "notebook_files" {
-  type        = map(string)
-  description = "Map of notebook names to file paths for deployment"
+# PREDEFINED NOTEBOOKS CONFIGURATION
+variable "predefined_notebooks" {
+  type = map(object({
+    source_path    = string
+    custom_tokens  = map(string)
+  }))
+  description = "Map of predefined notebooks to deploy with their source paths and custom tokens"
   default     = {}
   
   validation {
     condition = alltrue([
-      for path in values(var.notebook_files) : can(regex(".*\\.ipynb$", path))
+      for notebook in values(var.predefined_notebooks) : can(regex(".*\\.ipynb$", notebook.source_path))
     ])
-    error_message = "All notebook file paths must end with .ipynb extension."
+    error_message = "All notebook source paths must end with .ipynb extension."
   }
+}
+
+# PREDEFINED PIPELINE CONFIGURATION  
+variable "predefined_pipeline" {
+  type = object({
+    enabled       = bool
+    pipeline_type = string
+    source_path   = string
+    custom_tokens = map(string)
+  })
+  description = "Predefined pipeline configuration"
+  default = {
+    enabled       = false
+    pipeline_type = "medallion-basic"
+    source_path   = ""
+    custom_tokens = {}
+  }
+  
+  validation {
+    condition = !var.predefined_pipeline.enabled || (var.predefined_pipeline.enabled && length(var.predefined_pipeline.source_path) > 0)
+    error_message = "Pipeline source_path is required when pipeline is enabled."
+  }
+  
+  validation {
+    condition = !var.predefined_pipeline.enabled || (var.predefined_pipeline.enabled && can(regex(".*\\.json$", var.predefined_pipeline.source_path)))
+    error_message = "Pipeline source_path must end with .json extension when enabled."
+  }
+}
+
+# Update Control Settings
+variable "notebook_update_enabled" {
+  type        = bool
+  description = "Enable automatic updates when notebook source files change"
+  default     = true
+}
+
+variable "pipeline_update_enabled" {
+  type        = bool
+  description = "Enable automatic updates when pipeline source file changes"
+  default     = true
 }
 
 # Resource Tagging
@@ -105,34 +148,7 @@ variable "debug_mode" {
   default     = false
 }
 
-# Pipeline Configuration (Optional - for future enhancements)
-variable "pipeline_schedule" {
-  type = object({
-    enabled    = bool
-    frequency  = string
-    interval   = number
-    start_time = string
-  })
-  description = "Pipeline scheduling configuration"
-  default = {
-    enabled    = false
-    frequency  = "Hour"
-    interval   = 1
-    start_time = "2024-01-01T00:00:00Z"
-  }
-  
-  validation {
-    condition = contains(["Minute", "Hour", "Day", "Week", "Month"], var.pipeline_schedule.frequency)
-    error_message = "Pipeline frequency must be one of: Minute, Hour, Day, Week, Month."
-  }
-  
-  validation {
-    condition = var.pipeline_schedule.interval > 0 && var.pipeline_schedule.interval <= 1000
-    error_message = "Pipeline interval must be between 1 and 1000."
-  }
-}
-
-# Advanced Configuration Options (Optional - for future enhancements)
+# Advanced Configuration Options
 variable "lakehouse_settings" {
   type = object({
     enable_schemas          = bool
@@ -183,3 +199,7 @@ variable "resource_name_overrides" {
     pipeline_name = ""
   }
 }
+
+# REMOVED: Complex pipeline generation variables - not needed with predefined approach
+# REMOVED: notebook_files variable - replaced with predefined_notebooks
+# REMOVED: pipeline_schedule - pipeline scheduling should be defined in the predefined pipeline JSON

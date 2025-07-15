@@ -252,3 +252,48 @@ variable "cleanup_retention_hours" {
     error_message = "Cleanup retention must be between 1 and 168 hours (1 week)."
   }
 }
+
+# ADDED: Missing variable declarations for notebook custom tokens
+variable "bronze_data_source" {
+  type        = string
+  description = "Data source connection string for bronze layer ingestion"
+  default     = ""
+  
+  validation {
+    condition     = var.bronze_data_source == "" || length(var.bronze_data_source) > 0
+    error_message = "Bronze data source cannot be empty if provided."
+  }
+}
+
+variable "transformation_config" {
+  type        = string
+  description = "Transformation rules configuration for silver layer"
+  default     = "default"
+  
+  validation {
+    condition     = length(var.transformation_config) > 0
+    error_message = "Transformation config cannot be empty."
+  }
+}
+
+variable "dashboard_endpoint" {
+  type        = string
+  description = "Dashboard endpoint URL for gold layer analytics"
+  default     = ""
+  
+  validation {
+    condition     = var.dashboard_endpoint == "" || can(regex("^https?://", var.dashboard_endpoint))
+    error_message = "Dashboard endpoint must be a valid URL starting with http:// or https://."
+  }
+}
+
+variable "admin_email" {
+  type        = string
+  description = "Admin email address for pipeline notifications and error alerts"
+  default     = ""
+  
+  validation {
+    condition     = var.admin_email == "" || can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.admin_email))
+    error_message = "Admin email must be a valid email address format."
+  }
+}

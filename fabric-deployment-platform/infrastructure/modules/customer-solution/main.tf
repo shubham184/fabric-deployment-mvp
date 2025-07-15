@@ -1,6 +1,6 @@
-# Customer Solution Module - Main Configuration (ALL SYNTAX ERRORS FIXED)
-# Integrates with Fabric Deployment Platform ConfigLoader and TerraformWrapper
-# Deploys Microsoft Fabric resources following medallion architecture
+# Customer Solution Module - Main Configuration (SIMPLIFIED APPROACH)
+# Deploys PREDEFINED artifacts (pipelines & notebooks) to Microsoft Fabric
+# Terraform = Deployment Tool, NOT Content Creator
 
 terraform {
   required_version = ">= 1.8, < 2.0"
@@ -8,10 +8,6 @@ terraform {
     fabric = {
       source  = "microsoft/fabric"
       version = "1.3.0"
-    }
-    local = {
-      source  = "hashicorp/local"
-      version = "~> 2.0"
     }
   }
 }
@@ -34,7 +30,7 @@ locals {
     gold   = var.gold_layer
   }
   
-  # Generate lakehouse configurations with name overrides - FIXED SYNTAX
+  # Generate lakehouse configurations with name overrides
   lakehouses = {
     bronze = {
       name    = var.resource_name_overrides.bronze_lakehouse_name != "" ? var.resource_name_overrides.bronze_lakehouse_name : "${var.customer_prefix}-bronze-lh"
@@ -50,8 +46,8 @@ locals {
     }
   }
   
-  # Pipeline name with override support - FIXED SYNTAX
-  pipeline_name = var.resource_name_overrides.pipeline_name != "" ? var.resource_name_overrides.pipeline_name : "${var.customer_prefix}-orchestration-pipeline"
+  # Pipeline name with override support
+  pipeline_name = var.resource_name_overrides.pipeline_name != "" ? var.resource_name_overrides.pipeline_name : "${var.customer_prefix}-pipeline"
   
   # Common tags for all resources
   common_tags = merge(var.tags, {
@@ -60,12 +56,6 @@ locals {
     managed_by   = "terraform"
     architecture = "medallion"
   })
-}
-
-# Data source for capacity information (if needed)
-data "fabric_capacity" "workspace_capacity" {
-  count = var.fabric_capacity_id != null ? 1 : 0
-  id    = var.fabric_capacity_id
 }
 
 # Conditional Workspace Creation
@@ -81,8 +71,8 @@ resource "fabric_workspace" "customer_workspace" {
   }
 }
 
-# Workspace Capacity Assignment (CRITICAL FIX)
-# Assign workspace to capacity for functionality
+# Workspace Capacity Assignment (REQUIRED FOR FUNCTIONALITY)
+# Assign workspace to capacity for compute resources
 resource "fabric_workspace_capacity_assignment" "workspace_capacity" {
   count = var.fabric_capacity_id != null ? 1 : 0
   
@@ -91,12 +81,6 @@ resource "fabric_workspace_capacity_assignment" "workspace_capacity" {
   
   # Ensure workspace exists before assignment
   depends_on = [fabric_workspace.customer_workspace]
-}
-
-# Data source to reference existing workspace if provided
-data "fabric_workspace" "existing_workspace" {
-  count = local.create_workspace ? 0 : 1
-  id    = var.workspace_id
 }
 
 # Lakehouse Resources - Conditional creation based on enabled layers
@@ -122,28 +106,33 @@ resource "fabric_lakehouse" "layer_lakehouses" {
   ]
 }
 
-# Notebook Resources - Deploy from generated .ipynb files
-resource "fabric_notebook" "layer_notebooks" {
-  for_each = var.notebook_files
+# Notebook Resources - Deploy PREDEFINED .ipynb files
+resource "fabric_notebook" "predefined_notebooks" {
+  for_each = var.predefined_notebooks
   
   workspace_id = local.workspace_id
-  display_name = each.key
-  description  = "Generated notebook for ${var.customer_name} - ${each.key}"
+  display_name = "${var.customer_prefix}-${each.key}"
+  description  = "Notebook: ${each.key} for ${var.customer_name}"
   format       = "ipynb"
   
-  # IMPROVEMENT: Explicitly set definition_update_enabled
-  definition_update_enabled = var.debug_mode ? true : false
+  # Control whether notebooks update when source changes
+  definition_update_enabled = var.notebook_update_enabled
   
-  # Use definition with source file path
+  # Deploy predefined notebook with customer-specific tokens
   definition = {
     "notebook-content.ipynb" = {
-      source = each.value
-      # Add tokens support for template variables
-      tokens = {
+      source = each.value.source_path
+      tokens = merge({
+        # Standard tokens for all notebooks
         "customer_name"   = var.customer_name
         "customer_prefix" = var.customer_prefix
         "environment"     = var.environment
-      }
+        "workspace_id"    = local.workspace_id
+        # Layer-specific lakehouse IDs (if lakehouses exist)
+        "bronze_lakehouse_id" = var.bronze_layer && contains(keys(fabric_lakehouse.layer_lakehouses), "bronze") ? fabric_lakehouse.layer_lakehouses["bronze"].id : ""
+        "silver_lakehouse_id" = var.silver_layer && contains(keys(fabric_lakehouse.layer_lakehouses), "silver") ? fabric_lakehouse.layer_lakehouses["silver"].id : ""
+        "gold_lakehouse_id"   = var.gold_layer && contains(keys(fabric_lakehouse.layer_lakehouses), "gold") ? fabric_lakehouse.layer_lakehouses["gold"].id : ""
+      }, each.value.custom_tokens)
     }
   }
   
@@ -151,76 +140,43 @@ resource "fabric_notebook" "layer_notebooks" {
   depends_on = [fabric_lakehouse.layer_lakehouses]
 }
 
-# CRITICAL FIX: Create pipeline template file resource
-# This creates the pipeline definition that was missing
-resource "local_file" "pipeline_template" {
-  count = length(var.notebook_files) > 0 ? 1 : 0
-  
-  filename = "${path.module}/generated-pipeline-content.json"
-  content = jsonencode({
-    "$schema" = "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#"
-    "contentVersion" = "1.0.0.0"
-    "parameters" = {}
-    "variables" = {
-      "customerPrefix" = var.customer_prefix
-      "environment"    = var.environment
-    }
-    "resources" = []
-    "outputs" = {}
-    "activities" = [
-      {
-        "name" = "ExecuteNotebooks"
-        "type" = "ForEach"
-        "typeProperties" = {
-          "items" = {
-            "value" = "@pipeline().parameters.notebooks"
-            "type"  = "Expression"
-          }
-          "activities" = [
-            {
-              "name" = "RunNotebook"
-              "type" = "Notebook"
-              "typeProperties" = {
-                "notebook" = {
-                  "referenceName" = "@item().name"
-                  "type" = "NotebookReference"
-                }
-              }
-            }
-          ]
-        }
-      }
-    ]
-  })
-}
-
-# Data Pipeline Resources for orchestration
-resource "fabric_data_pipeline" "orchestration_pipeline" {
-  count = length(var.notebook_files) > 0 ? 1 : 0
+# Data Pipeline Resource - Deploy PREDEFINED pipeline
+resource "fabric_data_pipeline" "predefined_pipeline" {
+  count = var.predefined_pipeline.enabled ? 1 : 0
   
   workspace_id = local.workspace_id
   display_name = local.pipeline_name
-  description  = "Main orchestration pipeline for ${var.customer_name}"
+  description  = "Pipeline: ${var.predefined_pipeline.pipeline_type} for ${var.customer_name}"
   format       = "Default"
   
-  # IMPROVEMENT: Explicitly set definition_update_enabled
-  definition_update_enabled = var.debug_mode ? true : false
+  # Control whether pipeline updates when source changes
+  definition_update_enabled = var.pipeline_update_enabled
   
-  # Use the generated pipeline definition file
+  # Deploy predefined pipeline with customer-specific tokens
   definition = {
     "pipeline-content.json" = {
-      source = local_file.pipeline_template[0].filename
-      tokens = {
+      source = var.predefined_pipeline.source_path
+      tokens = merge({
+        # Standard tokens for pipeline
+        "customer_name"   = var.customer_name
         "customer_prefix" = var.customer_prefix
         "environment"     = var.environment
         "workspace_id"    = local.workspace_id
-      }
+        # Notebook references
+        "notebooks" = jsonencode([
+          for notebook_key, notebook_config in var.predefined_notebooks : {
+            name = "${var.customer_prefix}-${notebook_key}"
+            id   = fabric_notebook.predefined_notebooks[notebook_key].id
+          }
+        ])
+        # Lakehouse references
+        "bronze_lakehouse_name" = var.bronze_layer && contains(keys(fabric_lakehouse.layer_lakehouses), "bronze") ? fabric_lakehouse.layer_lakehouses["bronze"].display_name : ""
+        "silver_lakehouse_name" = var.silver_layer && contains(keys(fabric_lakehouse.layer_lakehouses), "silver") ? fabric_lakehouse.layer_lakehouses["silver"].display_name : ""
+        "gold_lakehouse_name"   = var.gold_layer && contains(keys(fabric_lakehouse.layer_lakehouses), "gold") ? fabric_lakehouse.layer_lakehouses["gold"].display_name : ""
+      }, var.predefined_pipeline.custom_tokens)
     }
   }
   
-  # Ensure notebooks and template exist before creating pipeline
-  depends_on = [
-    fabric_notebook.layer_notebooks,
-    local_file.pipeline_template
-  ]
+  # Ensure notebooks exist before creating pipeline
+  depends_on = [fabric_notebook.predefined_notebooks]
 }

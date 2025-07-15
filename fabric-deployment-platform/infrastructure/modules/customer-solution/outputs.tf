@@ -1,4 +1,4 @@
-# Customer Solution Module - Output Definitions (VARIABLE REFERENCES FIXED)
+# Customer Solution Module - Output Definitions (SIMPLIFIED APPROACH)
 # Outputs for integration with existing platform and verification
 
 # Workspace Outputs
@@ -9,7 +9,7 @@ output "workspace_id" {
 
 output "workspace_name" {
   description = "Name of the Fabric workspace"
-  value       = local.create_workspace ? fabric_workspace.customer_workspace[0].display_name : data.fabric_workspace.existing_workspace[0].display_name
+  value       = local.workspace_name
 }
 
 output "workspace_url" {
@@ -66,15 +66,16 @@ output "gold_lakehouse_id" {
   value       = var.gold_layer && contains(keys(fabric_lakehouse.layer_lakehouses), "gold") ? fabric_lakehouse.layer_lakehouses["gold"].id : null
 }
 
-# Notebook Outputs
+# Notebook Outputs (Updated for predefined notebooks)
 output "notebooks" {
-  description = "Map of deployed notebooks with their details"
+  description = "Map of deployed predefined notebooks with their details"
   value = {
-    for name, notebook in fabric_notebook.layer_notebooks : name => {
+    for name, notebook in fabric_notebook.predefined_notebooks : name => {
       id           = notebook.id
       name         = notebook.display_name
       workspace_id = notebook.workspace_id
       url          = "https://app.fabric.microsoft.com/groups/${notebook.workspace_id}/notebooks/${notebook.id}"
+      source_path  = var.predefined_notebooks[name].source_path
     }
   }
 }
@@ -82,31 +83,36 @@ output "notebooks" {
 output "notebook_ids" {
   description = "Map of notebook names to their IDs"
   value = {
-    for name, notebook in fabric_notebook.layer_notebooks : name => notebook.id
+    for name, notebook in fabric_notebook.predefined_notebooks : name => notebook.id
   }
 }
 
 output "notebook_names" {
-  description = "Map of notebook names to their display names"
+  description = "Map of notebook keys to their display names in Fabric"
   value = {
-    for name, notebook in fabric_notebook.layer_notebooks : name => notebook.display_name
+    for name, notebook in fabric_notebook.predefined_notebooks : name => notebook.display_name
   }
 }
 
-# Pipeline Outputs
+# Pipeline Outputs (Updated for predefined pipeline)
 output "pipeline_id" {
-  description = "ID of the orchestration pipeline (if created)"
-  value       = length(fabric_data_pipeline.orchestration_pipeline) > 0 ? fabric_data_pipeline.orchestration_pipeline[0].id : null
+  description = "ID of the predefined pipeline (if created)"
+  value       = length(fabric_data_pipeline.predefined_pipeline) > 0 ? fabric_data_pipeline.predefined_pipeline[0].id : null
 }
 
 output "pipeline_name" {
-  description = "Name of the orchestration pipeline (if created)"
-  value       = length(fabric_data_pipeline.orchestration_pipeline) > 0 ? fabric_data_pipeline.orchestration_pipeline[0].display_name : null
+  description = "Name of the predefined pipeline (if created)"
+  value       = length(fabric_data_pipeline.predefined_pipeline) > 0 ? fabric_data_pipeline.predefined_pipeline[0].display_name : null
 }
 
 output "pipeline_url" {
-  description = "URL to access the orchestration pipeline (if created)"
-  value       = length(fabric_data_pipeline.orchestration_pipeline) > 0 ? "https://app.fabric.microsoft.com/groups/${fabric_data_pipeline.orchestration_pipeline[0].workspace_id}/datapipelines/${fabric_data_pipeline.orchestration_pipeline[0].id}" : null
+  description = "URL to access the predefined pipeline (if created)"
+  value       = length(fabric_data_pipeline.predefined_pipeline) > 0 ? "https://app.fabric.microsoft.com/groups/${fabric_data_pipeline.predefined_pipeline[0].workspace_id}/datapipelines/${fabric_data_pipeline.predefined_pipeline[0].id}" : null
+}
+
+output "pipeline_type" {
+  description = "Type of predefined pipeline deployed"
+  value       = var.predefined_pipeline.enabled ? var.predefined_pipeline.pipeline_type : null
 }
 
 # Capacity Assignment Output
@@ -132,10 +138,16 @@ output "deployment_summary" {
       gold   = var.gold_layer
     }
     
+    predefined_artifacts = {
+      notebooks_deployed = length(var.predefined_notebooks)
+      pipeline_deployed  = var.predefined_pipeline.enabled
+      pipeline_type      = var.predefined_pipeline.enabled ? var.predefined_pipeline.pipeline_type : null
+    }
+    
     resource_counts = {
       lakehouses = length(fabric_lakehouse.layer_lakehouses)
-      notebooks  = length(fabric_notebook.layer_notebooks)
-      pipelines  = length(fabric_data_pipeline.orchestration_pipeline)
+      notebooks  = length(fabric_notebook.predefined_notebooks)
+      pipelines  = length(fabric_data_pipeline.predefined_pipeline)
     }
     
     capacity_id = var.fabric_capacity_id
@@ -156,13 +168,13 @@ output "resource_urls" {
     }
     
     notebooks = {
-      for name, notebook in fabric_notebook.layer_notebooks : name => (
+      for name, notebook in fabric_notebook.predefined_notebooks : name => (
         "https://app.fabric.microsoft.com/groups/${notebook.workspace_id}/notebooks/${notebook.id}"
       )
     }
     
-    pipeline = length(fabric_data_pipeline.orchestration_pipeline) > 0 ? (
-      "https://app.fabric.microsoft.com/groups/${fabric_data_pipeline.orchestration_pipeline[0].workspace_id}/datapipelines/${fabric_data_pipeline.orchestration_pipeline[0].id}"
+    pipeline = length(fabric_data_pipeline.predefined_pipeline) > 0 ? (
+      "https://app.fabric.microsoft.com/groups/${fabric_data_pipeline.predefined_pipeline[0].workspace_id}/datapipelines/${fabric_data_pipeline.predefined_pipeline[0].id}"
     ) : null
   }
 }
@@ -174,13 +186,40 @@ output "configuration_status" {
     valid_customer_prefix = can(regex("^[a-z0-9]{2,8}$", var.customer_prefix))
     valid_environment     = contains(["dev", "staging", "prod"], var.environment)
     layers_enabled        = length([for layer, enabled in local.enabled_layers : layer if enabled])
-    notebooks_deployed    = length(var.notebook_files)
-    capacity_assigned     = var.fabric_capacity_id != null
+    
+    # Predefined artifacts status
+    predefined_notebooks_count = length(var.predefined_notebooks)
+    predefined_pipeline_enabled = var.predefined_pipeline.enabled
+    
+    capacity_assigned = var.fabric_capacity_id != null
     
     deployment_complete = alltrue([
       local.workspace_id != null,
       length(fabric_lakehouse.layer_lakehouses) > 0,
-      length(var.notebook_files) == 0 || length(fabric_notebook.layer_notebooks) > 0
+      length(var.predefined_notebooks) == 0 || length(fabric_notebook.predefined_notebooks) > 0
     ])
+  }
+}
+
+# Predefined Artifacts Summary
+output "predefined_artifacts_summary" {
+  description = "Summary of predefined artifacts deployed"
+  value = {
+    notebooks = {
+      for key, config in var.predefined_notebooks : key => {
+        source_path    = config.source_path
+        deployed_name  = "${var.customer_prefix}-${key}"
+        fabric_id      = fabric_notebook.predefined_notebooks[key].id
+        custom_tokens  = config.custom_tokens
+      }
+    }
+    
+    pipeline = var.predefined_pipeline.enabled ? {
+      pipeline_type  = var.predefined_pipeline.pipeline_type
+      source_path    = var.predefined_pipeline.source_path
+      deployed_name  = local.pipeline_name
+      fabric_id      = fabric_data_pipeline.predefined_pipeline[0].id
+      custom_tokens  = var.predefined_pipeline.custom_tokens
+    } : null
   }
 }
