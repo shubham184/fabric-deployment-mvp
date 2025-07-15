@@ -105,7 +105,7 @@ variable "debug_mode" {
   default     = false
 }
 
-# Pipeline Configuration
+# Pipeline Configuration (Optional - for future enhancements)
 variable "pipeline_schedule" {
   type = object({
     enabled    = bool
@@ -132,7 +132,7 @@ variable "pipeline_schedule" {
   }
 }
 
-# Advanced Configuration Options
+# Advanced Configuration Options (Optional - for future enhancements)
 variable "lakehouse_settings" {
   type = object({
     enable_schemas          = bool

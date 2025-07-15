@@ -3,11 +3,11 @@
 # Deploys Microsoft Fabric resources following medallion architecture
 
 terraform {
-  required_version = ">= 1.0"
+  required_version = ">= 1.8, < 2.0"
   required_providers {
     fabric = {
       source  = "microsoft/fabric"
-      version = "~> 0.1.0"
+      version = "1.3.0"
     }
   }
 }
@@ -55,15 +55,6 @@ resource "fabric_workspace" "customer_workspace" {
   display_name = local.workspace_name
   description  = "Workspace for ${var.customer_name} - ${var.environment} environment"
   
-  # Assign to capacity if provided
-  dynamic "capacity_assignment" {
-    for_each = var.fabric_capacity_id != null ? [1] : []
-    content {
-      capacity_id = var.fabric_capacity_id
-    }
-  }
-  
-  # Apply tags if supported by the resource
   lifecycle {
     create_before_destroy = true
   }
@@ -86,6 +77,11 @@ resource "fabric_lakehouse" "layer_lakehouses" {
   display_name = each.value.name
   description  = "${title(each.key)} layer lakehouse for ${var.customer_name}"
   
+  # Configure lakehouse with schemas enabled if specified
+  configuration = {
+    enable_schemas = var.lakehouse_settings.enable_schemas
+  }
+  
   # Ensure workspace exists before creating lakehouses
   depends_on = [fabric_workspace.customer_workspace]
 }
@@ -97,17 +93,13 @@ resource "fabric_notebook" "layer_notebooks" {
   workspace_id = local.workspace_id
   display_name = each.key
   description  = "Generated notebook for ${var.customer_name} - ${each.key}"
+  format       = "ipynb"
   
-  # Read notebook content from file
-  definition {
-    format = "ipynb"
-    parts = [
-      {
-        path     = "notebook-content.ipynb"
-        payload  = base64encode(file(each.value))
-        payload_type = "InlineBase64"
-      }
-    ]
+  # Use definition with source file path
+  definition = {
+    "notebook-content.ipynb" = {
+      source = each.value
+    }
   }
   
   # Ensure lakehouses exist before creating notebooks
@@ -121,55 +113,19 @@ resource "fabric_data_pipeline" "orchestration_pipeline" {
   workspace_id = local.workspace_id
   display_name = "${var.customer_prefix}-orchestration-pipeline"
   description  = "Main orchestration pipeline for ${var.customer_name}"
+  format       = "Default"
   
-  # Basic pipeline definition - will be enhanced based on actual requirements
-  definition {
-    parts = [
-      {
-        path = "pipeline-content.json"
-        payload = base64encode(jsonencode({
-          name = "${var.customer_prefix}-orchestration-pipeline"
-          properties = {
-            activities = [
-              for notebook_name, notebook_path in var.notebook_files : {
-                name = "Run-${notebook_name}"
-                type = "SynapseNotebook"
-                dependsOn = []
-                policy = {
-                  timeout = "7.00:00:00"
-                  retry = 0
-                  retryIntervalInSeconds = 30
-                }
-                typeProperties = {
-                  notebook = {
-                    referenceName = notebook_name
-                    type = "NotebookReference"
-                  }
-                }
-              }
-            ]
-            parameters = {}
-            variables = {}
-            folder = {
-              name = "pipelines"
-            }
-          }
-        }))
-        payload_type = "InlineBase64"
+  # Create a temporary pipeline definition file
+  definition = {
+    "pipeline-content.json" = {
+      source = "${path.module}/pipeline-template.json"
+      tokens = {
+        "customer_prefix" = var.customer_prefix
+        "environment"     = var.environment
       }
-    ]
+    }
   }
   
   # Ensure notebooks exist before creating pipeline
   depends_on = [fabric_notebook.layer_notebooks]
-}
-
-# Workspace capacity assignment if creating new workspace and capacity is provided
-resource "fabric_workspace_capacity_assignment" "workspace_capacity" {
-  count = local.create_workspace && var.fabric_capacity_id != null ? 1 : 0
-  
-  workspace_id = fabric_workspace.customer_workspace[0].id
-  capacity_id  = var.fabric_capacity_id
-  
-  depends_on = [fabric_workspace.customer_workspace]
 }

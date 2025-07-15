@@ -53,17 +53,17 @@ output "lakehouse_names" {
 # Specific layer outputs for easier access
 output "bronze_lakehouse_id" {
   description = "ID of the bronze lakehouse (if enabled)"
-  value       = var.bronze_layer ? fabric_lakehouse.layer_lakehouses["bronze"].id : null
+  value       = var.bronze_layer && contains(keys(fabric_lakehouse.layer_lakehouses), "bronze") ? fabric_lakehouse.layer_lakehouses["bronze"].id : null
 }
 
 output "silver_lakehouse_id" {
   description = "ID of the silver lakehouse (if enabled)"
-  value       = var.silver_layer ? fabric_lakehouse.layer_lakehouses["silver"].id : null
+  value       = var.silver_layer && contains(keys(fabric_lakehouse.layer_lakehouses), "silver") ? fabric_lakehouse.layer_lakehouses["silver"].id : null
 }
 
 output "gold_lakehouse_id" {
   description = "ID of the gold lakehouse (if enabled)"
-  value       = var.gold_layer ? fabric_lakehouse.layer_lakehouses["gold"].id : null
+  value       = var.gold_layer && contains(keys(fabric_lakehouse.layer_lakehouses), "gold") ? fabric_lakehouse.layer_lakehouses["gold"].id : null
 }
 
 # Notebook Outputs
@@ -150,17 +150,20 @@ output "resource_urls" {
     workspace = "https://app.fabric.microsoft.com/groups/${local.workspace_id}"
     
     lakehouses = {
-      for layer, lakehouse in fabric_lakehouse.layer_lakehouses : layer => 
-      "https://app.fabric.microsoft.com/groups/${lakehouse.workspace_id}/lakehouses/${lakehouse.id}"
+      for layer, lakehouse in fabric_lakehouse.layer_lakehouses : layer => (
+        "https://app.fabric.microsoft.com/groups/${lakehouse.workspace_id}/lakehouses/${lakehouse.id}"
+      )
     }
     
     notebooks = {
-      for name, notebook in fabric_notebook.layer_notebooks : name => 
-      "https://app.fabric.microsoft.com/groups/${notebook.workspace_id}/notebooks/${notebook.id}"
+      for name, notebook in fabric_notebook.layer_notebooks : name => (
+        "https://app.fabric.microsoft.com/groups/${notebook.workspace_id}/notebooks/${notebook.id}"
+      )
     }
     
-    pipeline = length(fabric_data_pipeline.orchestration_pipeline) > 0 ? 
-      "https://app.fabric.microsoft.com/groups/${fabric_data_pipeline.orchestration_pipeline[0].workspace_id}/datapipelines/${fabric_data_pipeline.orchestration_pipeline[0].id}" : null
+    pipeline = length(fabric_data_pipeline.orchestration_pipeline) > 0 ? (
+      "https://app.fabric.microsoft.com/groups/${fabric_data_pipeline.orchestration_pipeline[0].workspace_id}/datapipelines/${fabric_data_pipeline.orchestration_pipeline[0].id}"
+    ) : null
   }
 }
 

@@ -2,12 +2,12 @@
 # Integrates with existing TerraformWrapper and ConfigLoader
 
 terraform {
-  required_version = ">= 1.0"
+  required_version = ">= 1.8, < 2.0"
   
   required_providers {
     fabric = {
       source  = "microsoft/fabric"
-      version = "~> 0.1.0"
+      version = "1.3.0"
     }
   }
   
@@ -94,47 +94,19 @@ module "customer_solution" {
   resource_name_overrides = var.resource_name_overrides
 }
 
-# Optional: Additional development environment resources
-resource "fabric_workspace_role_assignment" "dev_admins" {
-  count = length(var.dev_admin_users)
-  
-  workspace_id = module.customer_solution.workspace_id
-  principal_id = var.dev_admin_users[count.index].principal_id
-  principal_type = var.dev_admin_users[count.index].principal_type
-  role = "Admin"
-  
-  depends_on = [module.customer_solution]
-}
-
-resource "fabric_workspace_role_assignment" "dev_contributors" {
-  count = length(var.dev_contributor_users)
-  
-  workspace_id = module.customer_solution.workspace_id
-  principal_id = var.dev_contributor_users[count.index].principal_id
-  principal_type = var.dev_contributor_users[count.index].principal_type
-  role = "Contributor"
-  
-  depends_on = [module.customer_solution]
-}
-
-# Optional: Development-specific monitoring and logging
-resource "fabric_workspace_settings" "dev_settings" {
-  count = var.enable_dev_features ? 1 : 0
-  
-  workspace_id = module.customer_solution.workspace_id
-  
-  # Development-specific settings
-  settings = {
-    # Enable additional logging and monitoring for development
-    enable_debug_logging = true
-    enable_performance_monitoring = true
-    
-    # Development-specific retention policies
-    log_retention_days = 7
-    
-    # Enable experimental features for development
-    enable_preview_features = var.enable_preview_features
+# Output workspace information for platform integration
+output "workspace_info" {
+  description = "Workspace information for platform integration"
+  value = {
+    workspace_id   = module.customer_solution.workspace_id
+    workspace_name = module.customer_solution.workspace_name
+    workspace_url  = module.customer_solution.workspace_url
+    environment    = local.environment
   }
-  
-  depends_on = [module.customer_solution]
+}
+
+# Output deployment summary for debugging
+output "deployment_summary" {
+  description = "Summary of deployed resources"
+  value       = module.customer_solution.deployment_summary
 }
