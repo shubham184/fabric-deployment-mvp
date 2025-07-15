@@ -36,6 +36,7 @@ For application security recommendations, see [Microsoft identity platform best 
 Our recommended approach is storing the credentials as Environment Variables, for example:
 
 #### sh
+
 ```bash
 export FABRIC_TENANT_ID="00000000-0000-0000-0000-000000000000"
 export FABRIC_CLIENT_ID="00000000-0000-0000-0000-000000000000"
@@ -43,6 +44,7 @@ export FABRIC_CLIENT_SECRET="YourClientSecret"
 ```
 
 #### PowerShell
+
 ```powershell
 $env:FABRIC_TENANT_ID = '00000000-0000-0000-0000-000000000000'
 $env:FABRIC_CLIENT_ID = '00000000-0000-0000-0000-000000000000'

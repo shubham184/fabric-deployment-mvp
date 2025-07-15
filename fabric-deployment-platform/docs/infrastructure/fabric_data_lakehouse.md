@@ -46,13 +46,13 @@ resource "fabric_lakehouse" "example2" {
 
 ## Nested Schema for `configuration`
 
-### Required:
+### Required Fields
 
 - `enable_schemas` (Boolean) Schema enabled Lakehouse.
 
 ## Nested Schema for `timeouts`
 
-### Optional:
+### Optional Fields
 
 - `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 
@@ -64,7 +64,7 @@ resource "fabric_lakehouse" "example2" {
 
 ## Nested Schema for `properties`
 
-### Read-Only:
+### Read-Only Fields
 
 - `default_schema` (String) Default schema of the Lakehouse. This property is returned only for schema enabled Lakehouse.
 - `onelake_files_path` (String) OneLake path to the Lakehouse files directory
@@ -73,7 +73,7 @@ resource "fabric_lakehouse" "example2" {
 
 ## Nested Schema for `properties.sql_endpoint_properties`
 
-### Read-Only:
+### SQL Endpoint Read-Only Fields
 
 - `connection_string` (String) SQL endpoint connection string.
 - `id` (String) SQL endpoint ID.

@@ -70,23 +70,23 @@ resource "fabric_data_pipeline" "example_definition_update" {
 
 ## Nested Schema for `definition`
 
-### Required:
+### Required Fields
 
 - `source` (String) Path to the file with source of the definition part.
 
 The source content may include placeholders for token substitution. Use the dot with the token name `{{ .TokenName }}`.
 
-### Optional:
+### Optional Definition Fields
 
 - `tokens` (Map of String) A map of key/value pairs of tokens substitutes in the source.
 
-### Read-Only:
+### Read-Only Fields
 
 - `source_content_sha256` (String) SHA256 of source's content of definition part.
 
 ## Nested Schema for `timeouts`
 
-### Optional:
+### Optional Fields
 
 - `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 

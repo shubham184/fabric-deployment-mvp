@@ -21,7 +21,7 @@ In this section, you install and configure requirements to use Terraform and the
 4. You must have a [Fabric Capacity](https://docs.microsoft.com/en-us/fabric/enterprise/licenses#capacity) provisioned in Azure. See [Configuring a Fabric Capacity](https://registry.terraform.io/providers/microsoft/fabric/latest/docs/guides/capacity) in the Microsoft Fabric Terraform Provider documentation.
 
    ℹ️ **Note**
-   
+
    Please keep the capacity name handy, as we will use it below to fetch the capacity id.
 
 ## Sample configuration
@@ -33,7 +33,7 @@ This section provides a sample configuration that you can experiment with to pro
 2. Add the following code to `provider.tf` to define a dependency on the Microsoft Fabric Terraform Provider:
 
    ```hcl
-   # We strongly recommend using the required_providers block 
+   # We strongly recommend using the required_providers block
    terraform {
      required_version = ">= 1.8, < 2.0"
      required_providers {
