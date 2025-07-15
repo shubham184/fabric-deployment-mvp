@@ -26,10 +26,10 @@ stages:
   - job: ValidateConfig
     displayName: 'Validate Customer Configuration'
     steps:
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '3.9'
-        displayName: 'Use Python 3.9'
+    - script: |
+        python --version
+        pip --version
+      displayName: 'Check Python Version'
     
     - script: |
         pip install -r requirements.txt
@@ -57,10 +57,10 @@ stages:
         python scripts/deploy.py plan --customer $(CUSTOMER_NAME) --environment $(TARGET_ENVIRONMENT)
       displayName: 'Create Terraform Plan'
     
-    - task: PublishBuildArtifacts@1
+    - task: PublishPipelineArtifact@1
       inputs:
-        pathToPublish: 'deployment-outputs/terraform-plans'
-        artifactName: 'terraform-plans'
+        targetPath: 'deployment-outputs/terraform-plans'
+        artifact: 'terraform-plans'
 
 - stage: Deploy
   displayName: 'Deploy to Environment'
@@ -78,8 +78,8 @@ stages:
               python scripts/deploy.py deploy --customer $(CUSTOMER_NAME) --environment $(TARGET_ENVIRONMENT)
             displayName: 'Deploy Customer Solution'
           
-          - task: PublishBuildArtifacts@1
+          - task: PublishPipelineArtifact@1
             condition: always()
             inputs:
-              pathToPublish: 'deployment-outputs/reports'
-              artifactName: 'deployment-reports'
+              targetPath: 'deployment-outputs/reports'
+              artifact: 'deployment-reports'
