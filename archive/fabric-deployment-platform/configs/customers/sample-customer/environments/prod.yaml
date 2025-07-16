@@ -1,8 +1,0 @@
-# prod.yaml
-workspace_id: "prod-workspace-guid-here"
-capacity_settings:
-  compute_scale: "large"
-  auto_scale: true
-environment_tags:
-  environment: "production"
-debug_mode: false

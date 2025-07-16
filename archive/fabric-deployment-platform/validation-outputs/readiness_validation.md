@@ -1,3 +1,0 @@
-# Deployment Report
-
-**Status:** ✅ Success

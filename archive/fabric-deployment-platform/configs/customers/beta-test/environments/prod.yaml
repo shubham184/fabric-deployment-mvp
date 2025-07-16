@@ -1,8 +1,0 @@
-# Production environment overrides
-workspace_id: "PROD_WORKSPACE_GUID_HERE"
-capacity_settings:
-  compute_scale: "large"
-  auto_scale: true
-environment_tags:
-  environment: "production"
-debug_mode: false
