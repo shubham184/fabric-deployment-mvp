@@ -1,152 +1,158 @@
-# Fabric Deployment Platform
+# Fabric Deployment Platform - MVP
 
-A comprehensive platform for automating the deployment of Microsoft Fabric solutions with support for medallion architecture, data pipelines, and customer-specific configurations.
+A simplified platform for deploying predefined Microsoft Fabric artifacts to customer workspaces.
 
-## 🏗️ Architecture Overview
+## Quick Start
 
-This platform provides a structured approach to deploying Microsoft Fabric solutions with:
-
-- **Medallion Architecture Support**: Bronze, Silver, and Gold layer implementations
-- **Template-Based Deployment**: Reusable templates for notebooks, dataflows, pipelines, and more
-- **Multi-Environment Support**: Development, Test, and Production environments
-- **Customer-Specific Configurations**: Tailored deployments for different customers
-- **Infrastructure as Code**: Terraform-based infrastructure management
-
-## 📁 Project Structure
-
-```
-fabric-deployment-platform/
-├── src/                          # Core Python source code
-│   ├── config/                   # Configuration management
-│   ├── templates/                # Template rendering and management
-│   ├── deployment/               # Deployment orchestration
-│   └── utils/                    # Utility functions
-├── infrastructure/               # Terraform infrastructure code
-│   ├── modules/                  # Reusable Terraform modules
-│   ├── environments/             # Environment-specific configurations
-│   └── shared/                   # Shared Terraform configurations
-├── configs/                      # Configuration files
-│   ├── customers/                # Customer-specific configurations
-│   ├── defaults/                 # Default configurations
-│   └── schemas/                  # JSON schemas for validation
-├── scripts/                      # Deployment and utility scripts
-├── tests/                        # Unit and integration tests
-└── docs/                         # Documentation
-```
-
-## 🚀 Quick Start
-
-### Prerequisites
+### 1. Prerequisites
 
 - Python 3.8+
-- Terraform 1.0+
-- Azure CLI
-- Microsoft Fabric access
+- Terraform 1.8+
+- Service Principal with Fabric permissions
+- Access to target Fabric workspace
+- **Important**: Workspace must already be assigned to a Fabric capacity
 
-### Installation
+### 2. Setup
 
-1. Clone the repository:
 ```bash
-git clone <repository-url>
+# Clone repository
+git clone <repo>
 cd fabric-deployment-platform
-```
 
-2. Install dependencies:
-```bash
+# Install dependencies
 pip install -r requirements.txt
+
+# Setup Service Principal Authentication
+# Copy the example file and fill in your credentials
+cp terraform/secrets.tfvars.example terraform/secrets.tfvars
+# Edit terraform/secrets.tfvars with your Service Principal details
 ```
 
-3. Configure your environment:
-```bash
-cp configs/customers/customer-template configs/customers/your-customer
-# Edit configuration files as needed
+### 3. Configure Customer
+
+Create a configuration file in `configs/customers/yourcustomer.yaml`:
+
+```yaml
+customer:
+  name: "Your Company"
+  prefix: "yc"
+  
+infrastructure:
+  workspace_id: "existing-workspace-guid"
+  capacity_id: "existing-capacity-guid"
+
+architecture:
+  bronze_enabled: true
+  silver_enabled: true
+  gold_enabled: true
+
+artifacts:
+  notebooks:
+    bronze-ingestion:
+      display_name: "Bronze Ingestion"
+      path: "predefined-artifacts/yourcustomer/notebooks/bronze-ingestion.ipynb"
+  pipelines:
+    daily-pipeline:
+      display_name: "Daily Pipeline"
+      path: "predefined-artifacts/yourcustomer/pipelines/daily-pipeline.json"
+
+environments:
+  dev:
+    debug_mode: true
+  prod:
+    auto_start_pipeline: true
 ```
 
-### Basic Usage
+### 4. Add Predefined Artifacts
 
-1. Validate configuration:
-```bash
-python scripts/validate.py --customer your-customer
+Place your notebooks and pipelines in:
+```
+predefined-artifacts/
+└── yourcustomer/
+    ├── notebooks/
+    │   ├── bronze-ingestion.ipynb
+    │   └── silver-transform.ipynb
+    └── pipelines/
+        └── daily-pipeline.json
 ```
 
-2. Deploy to development environment:
-```bash
-python scripts/deploy.py --customer your-customer --environment dev
-```
-
-## 📋 Features
-
-### Core Components
-
-- **Configuration Management**: YAML-based customer configurations with schema validation
-- **Template Engine**: Jinja2-based template rendering for Fabric artifacts
-- **Deployment Orchestrator**: Automated deployment pipeline management
-- **Terraform Integration**: Infrastructure provisioning and management
-- **Validation Framework**: Comprehensive validation of configurations and deployments
-
-### Supported Artifacts
-
-- **Notebooks**: Jupyter notebooks for data processing
-- **Dataflows**: Power Query data transformation flows
-- **Pipelines**: Data Factory pipelines
-- **Lakehouses**: OneLake storage configurations
-- **Warehouses**: SQL analytics endpoints
-- **Semantic Models**: Power BI data models
-- **Reports**: Power BI reports and dashboards
-
-## 🔧 Configuration
-
-### Customer Configuration
-
-Each customer has a dedicated configuration directory with:
-
-- `base.yaml`: Core customer settings
-- `deploy-order.yaml`: Deployment sequence definition
-- `environments/`: Environment-specific overrides
-
-### Environment Support
-
-- **Development**: For development and testing
-- **Test**: For staging and validation
-- **Production**: For production deployments
-
-## 🧪 Testing
-
-Run the test suite:
+### 5. Deploy
 
 ```bash
-# Unit tests
-python -m pytest tests/unit/
+# Deploy to development
+python scripts/deploy.py yourcustomer --environment dev
 
-# Integration tests
-python -m pytest tests/integration/
-
-# All tests with coverage
-python -m pytest --cov=src tests/
+# Deploy to production with auto-approve
+python scripts/deploy.py yourcustomer --environment prod --auto-approve
 ```
 
-## 📚 Documentation
+## How It Works
 
-- [Setup Guide](docs/setup.md)
-- [Operations Manual](docs/operations.md)
-- [Architecture Overview](docs/architecture.md)
-- [API Reference](docs/api-reference.md)
+1. **Configuration**: Single YAML file per customer defines what to deploy
+2. **Artifacts**: Predefined notebooks and pipelines (no dynamic generation)
+3. **Terraform**: Handles actual deployment to Fabric workspace
+4. **Python**: Simple orchestration - reads config, validates files, runs Terraform
 
-## 🤝 Contributing
+## Architecture
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
+```
+Customer Config (YAML)
+    ↓
+Python Script (deploy.py)
+    ↓
+Terraform (main.tf)
+    ↓
+Microsoft Fabric APIs
+```
 
-## 📄 License
+## What Gets Deployed
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+- ✅ Lakehouses (Bronze, Silver, Gold)
+- ✅ Predefined Notebooks
+- ✅ Predefined Pipelines
+- ✅ Capacity assignments
 
-## 🆘 Support
+## What's NOT in MVP
 
-For support and questions:
-- Create an issue in the repository
-- Check the documentation in the `docs/` directory
-- Review the configuration examples in `configs/customers/` 
+- ❌ Dynamic artifact generation
+- ❌ Template processing
+- ❌ Workspace creation (uses existing)
+- ❌ Complex configuration inheritance
+- ❌ Batch deployments
+
+## Next Steps (Post-MVP)
+
+1. Add Azure DevOps pipeline
+2. Service Principal authentication
+3. Workspace creation capability
+4. Multiple environment support
+
+## Troubleshooting
+
+### Common Issues
+
+1. **"Workspace not found"**
+   - Verify workspace ID in config
+   - Ensure you have access to the workspace
+   - Check that Service Principal has permissions
+
+2. **"Notebook file not found"**
+   - Check path in config matches actual file location
+   - Paths are relative to project root
+
+3. **"Terraform init failed"**
+   - Ensure Terraform is installed
+   - Check Service Principal credentials in secrets.tfvars
+
+4. **"Workspace not assigned to capacity"**
+   - The Fabric provider requires workspaces to be pre-assigned to a capacity
+   - Assign the workspace to a capacity in Azure Portal before deployment
+   - The capacity_id in config is for reference only
+
+### Debug Mode
+
+Run with debug output:
+```bash
+export TF_LOG=DEBUG
+python scripts/deploy.py yourcustomer -e dev
+```
