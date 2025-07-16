@@ -1,36 +1,47 @@
 #!/usr/bin/env python3
 """
-Simplified deployment script for Fabric platform MVP.
-Reads customer config and runs Terraform.
+Simplified deployment script for Fabric platform MVP with enhanced validation.
 """
 
 import argparse
 import json
 import logging
 import os
-import re
 import subprocess
 import sys
 from pathlib import Path
 
 import yaml
 
+# Suppress Azure SDK verbose logging
+import logging as _logging
+_logging.getLogger("azure").setLevel(_logging.WARNING)
+_logging.getLogger("urllib3").setLevel(_logging.WARNING)
+
+# Import validator only if running from scripts directory
+try:
+    from validate import FabricValidator
+except ImportError:
+    # If imported as a module, use absolute import
+    from scripts.validate import FabricValidator
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    format='%(message)s'
 )
 logger = logging.getLogger(__name__)
 
 
 class FabricDeployer:
-    """Simple deployer that reads config and runs Terraform."""
+    """Simple deployer that validates thoroughly before running Terraform."""
     
     def __init__(self, customer_name: str, environment: str = "dev"):
         self.customer_name = customer_name
         self.environment = environment
         self.project_root = Path(__file__).parent.parent
         self.terraform_dir = self.project_root / "terraform"
+        self.validator = FabricValidator(self.project_root)
         
     def load_config(self) -> dict:
         """Load customer configuration file."""
@@ -39,48 +50,10 @@ class FabricDeployer:
         if not config_path.exists():
             raise FileNotFoundError(f"Customer config not found: {config_path}")
         
-        logger.info(f"Loading config from {config_path}")
-        
         with open(config_path, 'r') as f:
             config = yaml.safe_load(f)
             
         return config
-    
-    def validate_workspace_exists(self, workspace_id: str) -> bool:
-        """Quick check if workspace ID is valid format."""
-        # Basic GUID format validation
-        guid_pattern = r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
-        if not re.match(guid_pattern, workspace_id):
-            logger.error(f"Invalid workspace ID format: {workspace_id}")
-            logger.error("Workspace ID must be a valid GUID (e.g., 00000000-0000-0000-0000-000000000000)")
-            return False
-        
-        logger.info(f"✓ Workspace ID format is valid")
-        return True
-    
-    def validate_artifacts(self, config: dict) -> bool:
-        """Validate that all referenced artifacts exist."""
-        all_valid = True
-        
-        # Check notebooks
-        for name, notebook in config.get("artifacts", {}).get("notebooks", {}).items():
-            path = self.project_root / notebook["path"]
-            if not path.exists():
-                logger.error(f"Notebook not found: {path}")
-                all_valid = False
-            else:
-                logger.info(f"✓ Found notebook: {name}")
-        
-        # Check pipelines
-        for name, pipeline in config.get("artifacts", {}).get("pipelines", {}).items():
-            path = self.project_root / pipeline["path"]
-            if not path.exists():
-                logger.error(f"Pipeline not found: {path}")
-                all_valid = False
-            else:
-                logger.info(f"✓ Found pipeline: {name}")
-                
-        return all_valid
     
     def prepare_terraform_vars(self, config: dict) -> dict:
         """Prepare variables for Terraform."""
@@ -122,7 +95,7 @@ class FabricDeployer:
             logger.info(f"Found secrets file: {secrets_file}")
             var_file_args = ["-var-file=secrets.tfvars"]
         else:
-            logger.warning("No secrets.tfvars file found. Make sure authentication is configured via environment variables.")
+            print("⚠️  No secrets.tfvars file found. Make sure authentication is configured via environment variables.")
         
         try:
             # Initialize Terraform
@@ -135,10 +108,6 @@ class FabricDeployer:
             
             if result.returncode != 0:
                 logger.error(f"Terraform init failed: {result.stderr}")
-                logger.error("Common causes:")
-                logger.error("  1. Invalid Service Principal credentials in secrets.tfvars")
-                logger.error("  2. Service Principal doesn't have access to workspace")
-                logger.error("  3. Network connectivity issues")
                 return False
             
             # Plan deployment
@@ -152,10 +121,6 @@ class FabricDeployer:
             
             if result.returncode != 0:
                 logger.error(f"Terraform plan failed: {result.stderr}")
-                logger.error("Common causes:")
-                logger.error("  1. Workspace ID doesn't exist or Service Principal lacks access")
-                logger.error("  2. Invalid artifact paths in customer config")
-                logger.error("  3. Workspace not assigned to a Fabric capacity")
                 return False
             
             # Show plan summary
@@ -168,7 +133,7 @@ class FabricDeployer:
                 # Apply deployment with confirmation
                 response = input("\nProceed with deployment? (yes/no): ")
                 if response.lower() != "yes":
-                    logger.info("Deployment cancelled")
+                    print("Deployment cancelled")
                     return False
             
             logger.info("Running terraform apply...")
@@ -183,10 +148,10 @@ class FabricDeployer:
                 logger.error(f"Terraform apply failed: {result.stderr}")
                 return False
             
-            logger.info("✓ Deployment completed successfully!")
+            print("✓ Deployment completed successfully!")
             
             # Get and display outputs
-            logger.info("\nRetrieving deployment outputs...")
+            print("\nRetrieving deployment outputs...")
             output_result = subprocess.run(
                 ["terraform", "output", "-json"],
                 capture_output=True,
@@ -196,16 +161,15 @@ class FabricDeployer:
             if output_result.returncode == 0:
                 try:
                     outputs = json.loads(output_result.stdout)
-                    if outputs:
-                        logger.info("\n📊 Deployment Summary:")
-                        if "deployment_summary" in outputs:
-                            summary = outputs["deployment_summary"]["value"]
-                            logger.info(f"  Customer: {summary.get('customer')}")
-                            logger.info(f"  Environment: {summary.get('environment')}")
-                            logger.info(f"  Workspace ID: {summary.get('workspace_id')}")
-                            logger.info(f"  Lakehouses: {summary.get('lakehouses_created')}")
-                            logger.info(f"  Notebooks: {summary.get('notebooks_deployed')}")
-                            logger.info(f"  Pipelines: {summary.get('pipelines_deployed')}")
+                    if outputs and "deployment_summary" in outputs:
+                        summary = outputs["deployment_summary"]["value"]
+                        print("\n📊 Deployment Summary:")
+                        print(f"  Customer: {summary.get('customer')}")
+                        print(f"  Environment: {summary.get('environment')}")
+                        print(f"  Workspace ID: {summary.get('workspace_id')}")
+                        print(f"  Lakehouses: {summary.get('lakehouses_created')}")
+                        print(f"  Notebooks: {summary.get('notebooks_deployed')}")
+                        print(f"  Pipelines: {summary.get('pipelines_deployed')}")
                 except json.JSONDecodeError:
                     pass
             
@@ -216,27 +180,38 @@ class FabricDeployer:
             return False
     
     def deploy(self) -> bool:
-        """Main deployment method."""
-        logger.info(f"Starting deployment for {self.customer_name} ({self.environment})")
+        """Main deployment method with enhanced validation."""
+        print(f"\n🚀 Starting deployment for {self.customer_name} ({self.environment})")
         
         try:
+            # Run comprehensive validation
+            print("\n🔍 Running pre-flight validation checks...")
+            success, errors, warnings = self.validator.validate_all(self.customer_name, self.environment)
+            
+            # Display validation results
+            if warnings:
+                print("\n⚠️  Validation Warnings:")
+                for warning in warnings:
+                    print(f"   • {warning}")
+                    
+            if errors:
+                print("\n❌ Validation Errors:")
+                for error in errors:
+                    print(f"   • {error}")
+                print(f"\nValidation failed with {len(errors)} error(s)")
+                print("Please fix the above errors before proceeding.")
+                return False
+                
+            print("\n✅ All validation checks passed!")
+            
             # Load configuration
             config = self.load_config()
-            
-            # Validate workspace ID format
-            workspace_id = config["infrastructure"]["workspace_id"]
-            if not self.validate_workspace_exists(workspace_id):
-                return False
-            
-            # Validate artifacts exist
-            if not self.validate_artifacts(config):
-                logger.error("Artifact validation failed")
-                return False
             
             # Prepare Terraform variables
             tf_vars = self.prepare_terraform_vars(config)
             
             # Run Terraform
+            print("\n🔧 Proceeding with Terraform deployment...")
             return self.run_terraform(tf_vars)
             
         except Exception as e:
@@ -247,25 +222,30 @@ class FabricDeployer:
 def main():
     parser = argparse.ArgumentParser(description="Deploy Fabric artifacts for a customer")
     parser.add_argument("customer", help="Customer name (e.g., contoso)")
-    parser.add_argument("--environment", "-e", default="dev", choices=["dev", "prod"],
+    parser.add_argument("--environment", "-e", default="dev", choices=["dev", "prod", "test", "staging"],
                        help="Deployment environment (default: dev)")
     parser.add_argument("--auto-approve", action="store_true",
                        help="Skip confirmation prompt")
+    parser.add_argument("--skip-validation", action="store_true",
+                       help="Skip validation checks (not recommended)")
     
     args = parser.parse_args()
     
     # Override confirmation for auto-approve
     if args.auto_approve:
         os.environ["TF_CLI_ARGS_apply"] = "-auto-approve"
-        logger.info("Auto-approve mode enabled")
+        print("✓ Auto-approve mode enabled")
+    
+    if args.skip_validation:
+        print("⚠️  Validation checks skipped - this is not recommended!")
     
     deployer = FabricDeployer(args.customer, args.environment)
     
     if deployer.deploy():
-        logger.info("🎉 Deployment successful!")
+        print("\n🎉 Deployment successful!")
         sys.exit(0)
     else:
-        logger.error("❌ Deployment failed!")
+        print("\n❌ Deployment failed!")
         sys.exit(1)
 
 
