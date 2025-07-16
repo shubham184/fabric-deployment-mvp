@@ -1,0 +1,91 @@
+{
+  "name": "ContosoDailyMedallionPipeline",
+  "properties": {
+    "activities": [
+      {
+        "name": "Bronze_Ingestion",
+        "type": "Notebook",
+        "typeProperties": {
+          "notebook": {
+            "referenceName": "Bronze Data Ingestion",
+            "type": "NotebookReference"
+          },
+          "parameters": {}
+        },
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 30
+        }
+      },
+      {
+        "name": "Silver_Transform",
+        "type": "Notebook",
+        "dependsOn": [
+          {
+            "activity": "Bronze_Ingestion",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "typeProperties": {
+          "notebook": {
+            "referenceName": "Silver Data Transform",
+            "type": "NotebookReference"
+          },
+          "parameters": {}
+        },
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 30
+        }
+      },
+      {
+        "name": "Gold_Analytics",
+        "type": "Notebook",
+        "dependsOn": [
+          {
+            "activity": "Silver_Transform",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "typeProperties": {
+          "notebook": {
+            "referenceName": "Gold Analytics",
+            "type": "NotebookReference"
+          },
+          "parameters": {}
+        },
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 30
+        }
+      },
+      {
+        "name": "Send_Completion_Email",
+        "type": "WebActivity",
+        "dependsOn": [
+          {
+            "activity": "Gold_Analytics",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "typeProperties": {
+          "url": "https://prod-28.westus.logic.azure.com/workflows/abc123",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "subject": "Medallion Pipeline Completed",
+            "to": "data-team@contoso.com",
+            "body": "Daily medallion pipeline completed successfully."
+          }
+        }
+      }
+    ],
+    "annotations": ["Production", "Medallion", "Daily"],
+    "description": "Daily pipeline to process data through Bronze, Silver, and Gold layers"
+  }
+}

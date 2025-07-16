@@ -1,0 +1,42 @@
+# Contoso deployment configuration
+customer:
+  name: "Contoso Corp"
+  prefix: "ctso"
+  
+# Use existing workspace and capacity (MVP approach)
+infrastructure:
+  workspace_id: "acaf15c9-b415-4f0c-87b0-87e6a52ea13a"
+  capacity_id: "E075F770-5EAD-4BA7-B04B-E889209A4055"
+
+# Medallion architecture flags
+architecture:
+  bronze_enabled: true
+  silver_enabled: true
+  gold_enabled: true
+
+# Predefined artifacts to deploy
+artifacts:
+  notebooks:
+    bronze-ingestion:
+      display_name: "Bronze Data Ingestion"
+      path: "predefined-artifacts/contoso/notebooks/bronze-ingestion.ipynb"
+    silver-transform:
+      display_name: "Silver Data Transform"
+      path: "predefined-artifacts/contoso/notebooks/silver-transform.ipynb"
+    gold-analytics:
+      display_name: "Gold Analytics"
+      path: "predefined-artifacts/contoso/notebooks/gold-analytics.ipynb"
+      
+  pipelines:
+    medallion-orchestrator:
+      display_name: "Daily Medallion Pipeline"
+      path: "predefined-artifacts/contoso/pipelines/medallion-pipeline.json"
+
+# Environment-specific settings
+environments:
+  dev:
+    auto_start_pipeline: false
+    debug_mode: true
+  prod:
+    auto_start_pipeline: true
+    debug_mode: false
