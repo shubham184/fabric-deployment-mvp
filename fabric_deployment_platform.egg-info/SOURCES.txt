@@ -1,0 +1,13 @@
+README.md
+pyproject.toml
+fabric_deployment_platform.egg-info/PKG-INFO
+fabric_deployment_platform.egg-info/SOURCES.txt
+fabric_deployment_platform.egg-info/dependency_links.txt
+fabric_deployment_platform.egg-info/entry_points.txt
+fabric_deployment_platform.egg-info/requires.txt
+fabric_deployment_platform.egg-info/top_level.txt
+scripts/__init__.py
+scripts/fabric_cli.py
+scripts/fabric_deploy.py
+scripts/fabric_preview.py
+scripts/fabric_validate.py

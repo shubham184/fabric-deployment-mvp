@@ -5,7 +5,7 @@ customer:
   
 # Use existing workspace and capacity (MVP approach)
 infrastructure:
-  workspace_id: "acaf15c9-b415-4f0c-87b0-87e6a52ea13a"
+  workspace_id: "acaf15c9-b415-4f0c-87b0-87e6a52ea13b"
   capacity_id: "E075F770-5EAD-4BA7-B04B-E889209A4055"
 
 # Medallion architecture flags
