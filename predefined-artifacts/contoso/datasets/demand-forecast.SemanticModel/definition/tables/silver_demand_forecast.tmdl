@@ -1,0 +1,66 @@
+table silver_demand_forecast
+	lineageTag: 230a6683-8b3a-4d8f-8c0b-81283e67d66a
+	sourceLineageTag: [dbo].[silver_demand_forecast]
+
+	column forecast_id
+		dataType: string
+		sourceProviderType: varchar(8000)
+		lineageTag: 57266fe1-56b8-47b0-b12a-5fca87141445
+		sourceLineageTag: forecast_id
+		summarizeBy: none
+		sourceColumn: forecast_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column sku
+		dataType: string
+		sourceProviderType: varchar(8000)
+		lineageTag: 946ae351-5e14-496e-98f3-5e1a386a372d
+		sourceLineageTag: sku
+		summarizeBy: none
+		sourceColumn: sku
+
+		annotation SummarizationSetBy = Automatic
+
+	column forecast_date
+		dataType: string
+		sourceProviderType: varchar(8000)
+		lineageTag: cf2933fb-1e8f-4281-819b-1803e6297f98
+		sourceLineageTag: forecast_date
+		summarizeBy: none
+		sourceColumn: forecast_date
+
+		annotation SummarizationSetBy = Automatic
+
+	column forecasted_demand
+		dataType: int64
+		formatString: 0
+		sourceProviderType: bigint
+		lineageTag: d1f58310-51bb-4386-8023-f1b5fe2eeaf0
+		sourceLineageTag: forecasted_demand
+		summarizeBy: sum
+		sourceColumn: forecasted_demand
+
+		annotation SummarizationSetBy = Automatic
+
+	column confidence_level
+		dataType: double
+		sourceProviderType: float
+		lineageTag: dd077586-d755-49dc-b465-4c5dd0722436
+		sourceLineageTag: confidence_level
+		summarizeBy: sum
+		sourceColumn: confidence_level
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition silver_demand_forecast = entity
+		mode: directLake
+		source
+			entityName: silver_demand_forecast
+			schemaName: dbo
+			expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table
+

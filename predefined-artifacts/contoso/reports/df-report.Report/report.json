@@ -1,0 +1,42 @@
+{
+  "config": "{\"version\":\"5.59\",\"themeCollection\":{\"baseTheme\":{\"name\":\"CY24SU10\",\"version\":\"5.65\",\"type\":2}},\"activeSectionIndex\":0,\"defaultDrillFilterOtherVisuals\":true,\"settings\":{\"useNewFilterPaneExperience\":true,\"allowChangeFilterTypes\":true,\"useStylableVisualContainerHeader\":true,\"queryLimitOption\":6,\"useEnhancedTooltips\":true,\"exportDataMode\":1,\"useDefaultAggregateDisplayName\":true},\"objects\":{\"section\":[{\"properties\":{\"verticalAlignment\":{\"expr\":{\"Literal\":{\"Value\":\"'Top'\"}}}}}]}}",
+  "layoutOptimization": 0,
+  "resourcePackages": [
+    {
+      "resourcePackage": {
+        "disabled": false,
+        "items": [
+          {
+            "name": "CY24SU10",
+            "path": "BaseThemes/CY24SU10.json",
+            "type": 202
+          }
+        ],
+        "name": "SharedResources",
+        "type": 2
+      }
+    }
+  ],
+  "sections": [
+    {
+      "config": "{}",
+      "displayName": "Page 1",
+      "displayOption": 1,
+      "filters": "[]",
+      "height": 720.00,
+      "name": "df8315c35e95e90db548",
+      "visualContainers": [
+        {
+          "config": "{\"name\":\"0326f9293f2e5afb3586\",\"layouts\":[{\"id\":0,\"position\":{\"x\":10.285714285714286,\"y\":0,\"z\":0,\"width\":660.1008403361345,\"height\":702.4537815126051,\"tabOrder\":0}}],\"singleVisual\":{\"visualType\":\"tableEx\",\"projections\":{\"Values\":[{\"queryRef\":\"Sum(silver_demand_forecast.confidence_level)\"},{\"queryRef\":\"silver_demand_forecast.forecast_date\"},{\"queryRef\":\"silver_demand_forecast.forecast_id\"},{\"queryRef\":\"Sum(silver_demand_forecast.forecasted_demand)\"},{\"queryRef\":\"silver_demand_forecast.sku\"}]},\"prototypeQuery\":{\"Version\":2,\"From\":[{\"Name\":\"s\",\"Entity\":\"silver_demand_forecast\",\"Type\":0}],\"Select\":[{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"s\"}},\"Property\":\"confidence_level\"}},\"Function\":0},\"Name\":\"Sum(silver_demand_forecast.confidence_level)\",\"NativeReferenceName\":\"Sum of confidence_level\"},{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"s\"}},\"Property\":\"forecast_date\"},\"Name\":\"silver_demand_forecast.forecast_date\",\"NativeReferenceName\":\"forecast_date\"},{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"s\"}},\"Property\":\"forecast_id\"},\"Name\":\"silver_demand_forecast.forecast_id\",\"NativeReferenceName\":\"forecast_id\"},{\"Aggregation\":{\"Expression\":{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"s\"}},\"Property\":\"forecasted_demand\"}},\"Function\":0},\"Name\":\"Sum(silver_demand_forecast.forecasted_demand)\",\"NativeReferenceName\":\"Sum of forecasted_demand\"},{\"Column\":{\"Expression\":{\"SourceRef\":{\"Source\":\"s\"}},\"Property\":\"sku\"},\"Name\":\"silver_demand_forecast.sku\",\"NativeReferenceName\":\"sku\"}]},\"drillFilterOtherVisuals\":true}}",
+          "filters": "[]",
+          "height": 702.45,
+          "width": 660.10,
+          "x": 10.29,
+          "y": 0.00,
+          "z": 0.00
+        }
+      ],
+      "width": 1280.00
+    }
+  ]
+}
