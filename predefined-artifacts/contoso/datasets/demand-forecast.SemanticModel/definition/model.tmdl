@@ -1,0 +1,19 @@
+model Model
+	culture: en-US
+	collation: Latin1_General_100_BIN2_UTF8
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBIDesktopVersion = 2.144.7678.1 (Main)+03ff7a4d52fc4bc95d07de5a5c7249d505f89026
+
+annotation PBI_QueryOrder = ["DatabaseQuery"]
+
+ref table silver_demand_forecast
+
+ref cultureInfo en-US
+
