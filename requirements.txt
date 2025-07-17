@@ -1,9 +1,17 @@
+# Enhanced CLI dependencies
+typer[all]>=0.9.0    # Modern CLI framework with Rich support
+rich>=13.7.0         # Beautiful terminal formatting
+click>=8.1.0         # Required by Typer
+
 # Core dependencies
 PyYAML>=6.0
 Jinja2>=3.1.0
 jsonschema>=4.17.0
-click>=8.1.0
-rich>=13.0.0
+
+# Enhanced CLI dependencies
+typer[all]>=0.9.0    # Modern CLI framework with Rich support
+rich>=13.7.0         # Beautiful terminal formatting
+click>=8.1.0         # Required by Typer
 
 # Azure and Fabric dependencies
 azure-identity>=1.12.0
@@ -13,6 +21,7 @@ azure-mgmt-powerbidedicated>=1.0.0
 
 # Terraform integration
 python-hcl2>=4.3.0
+python-terraform>=0.10.0
 
 # Testing
 pytest>=7.0.0
@@ -37,6 +46,9 @@ jupyter>=1.0.0
 
 # Utilities
 python-dotenv>=1.0.0
-pathlib2>=2.3.0 
-python-terraform>=0.10.0
-jsonschema>=4.17.0
+pathlib2>=2.3.0
+requests>=2.31.0
+
+# Additional CLI enhancements
+shellingham>=1.5.0   # Shell detection for Typer
+colorama>=0.4.6      # Windows color support

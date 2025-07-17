@@ -1,0 +1,6 @@
+[console_scripts]
+fabric-deploy = scripts.deploy:main
+fabric-manage = scripts.manage:main
+fabric-render = scripts.render_templates:main
+fabric-validate = scripts.validate:main
+unison-insights-deploy = scripts.fabric_cli:app

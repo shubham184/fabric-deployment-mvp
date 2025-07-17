@@ -32,6 +32,7 @@ dependencies = [
     "jsonschema>=4.17.0",
     "click>=8.1.0",
     "rich>=13.0.0",
+    "typer[all]>=0.9.0",
     "azure-identity>=1.12.0",
     "azure-mgmt-resource>=23.0.0",
     "azure-mgmt-datafactory>=8.0.0",
@@ -44,6 +45,9 @@ dependencies = [
     "jupyter>=1.0.0",
     "python-dotenv>=1.0.0",
     "pathlib2>=2.3.0",
+    "requests>=2.31.0",
+    "shellingham>=1.5.0",
+    "colorama>=0.4.6",
 ]
 
 [project.optional-dependencies]
@@ -54,16 +58,25 @@ dev = [
     "black>=23.0.0",
     "flake8>=6.0.0",
     "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
 ]
 
 [project.scripts]
+# Main CLI entry point
+unison-insights-deploy = "scripts.fabric_cli:app"
+
+# Legacy command support (optional - can be removed later)
 fabric-deploy = "scripts.deploy:main"
 fabric-validate = "scripts.validate:main"
 fabric-render = "scripts.render_templates:main"
 fabric-manage = "scripts.manage:main"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["src", "."]
+include = ["scripts*", "src*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.yml", "*.json", "*.ipynb"]
 
 [tool.black]
 line-length = 88
@@ -109,4 +122,4 @@ addopts = [
     "--cov=src",
     "--cov-report=term-missing",
     "--cov-report=html",
-] 
+]
